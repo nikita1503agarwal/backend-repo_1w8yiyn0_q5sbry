@@ -1,48 +1,43 @@
 """
-Database Schemas
+Database Schemas for the Learning App (Computer Networks)
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model name maps to a MongoDB collection using the lowercase of the
+class name (e.g., Worksheet -> "worksheet").
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Optional, Dict, Any
 
-# Example schemas (replace with your own):
+# ---- Core Domain Schemas ----
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+class WorksheetAnswer(BaseModel):
+    question_id: str = Field(..., description="Identifier for the worksheet question")
+    answer_text: str = Field(..., description="Student's answer in free text")
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class Worksheet(BaseModel):
+    student_name: str = Field(..., description="Student full name")
+    class_name: str = Field(..., description="Class / Grade / Group")
+    topic: str = Field("Computer Network Topologies", description="Worksheet topic")
+    answers: List[WorksheetAnswer] = Field(default_factory=list, description="List of answers")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Reflection(BaseModel):
+    worksheet_id: str = Field(..., description="Related worksheet document id")
+    student_name: str = Field(..., description="Student full name")
+    understanding_level: int = Field(..., ge=1, le=5, description="Self-assessed understanding 1-5")
+    feelings: Optional[str] = Field(None, description="How do you feel about the topic?")
+    challenges: Optional[str] = Field(None, description="What was challenging?")
+    questions: Optional[str] = Field(None, description="What questions remain?")
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class QuizQuestion(BaseModel):
+    id: str
+    question: str
+    options: List[str]
+
+class QuizSubmission(BaseModel):
+    student_name: Optional[str] = Field(None, description="Student full name")
+    quiz_key: str = Field(..., description="Quiz identifier, e.g., 'network-topologies'")
+    # Map of question id to selected option index
+    answers: Dict[str, int] = Field(default_factory=dict)
+    score: Optional[int] = None
+    total: Optional[int] = None
+    details: Optional[List[Dict[str, Any]]] = None
